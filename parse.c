@@ -1,5 +1,5 @@
 /*
-    This file is a part of GTQalc
+    This file is a part of a dic
     Copyright (C) 2012 Jalil Karimov <jukarimov@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
