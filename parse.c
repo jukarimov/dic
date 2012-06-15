@@ -1,3 +1,21 @@
+/*
+    This file is a part of GTQalc
+    Copyright (C) 2012 Jalil Karimov <jukarimov@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
+
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -5,6 +23,13 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include "linenoise.h"
+
+const char *banner = "GNU dic, dictionary lookup utility\n\
+Copyright (C) 2012 Jalil Karimov.\n\
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\n\
+This is free software: you are free to change and redistribute it.\n\
+There is NO WARRANTY, to the extent permitted by law. More at the link or in gpl.txt\n";
 
 struct index {
 	char	*k;
@@ -23,7 +48,7 @@ typedef struct node NODE;
 
 #define init(var, type)	(var = (type *)malloc(sizeof(type)))
 
-#define BUCKETS 	200000
+#define BUCKETS 	60000
 
 #define	DCHARHASH(h, c)	((h) = 0x63c63cd9*(h) + 0x9c39c33d + (c))
 
@@ -144,9 +169,11 @@ void parse(const char *line, char *key, int *len, int *oft)
 		}
 	}
 }
-
+ 
 int main(int argc, char *argv[])
 {
+	printf("%s", banner);
+
 	char line[8000];
 	char k[8000];
 	int i, h, vlen, offt, len;
@@ -163,12 +190,16 @@ int main(int argc, char *argv[])
 		HT[i].len = 0;
 	}
 
+	int c = 0;
+	printf("Loading index...");
 	while ((len=fgetln(line)) != -1) {
 
 		parse(line, k, &vlen, &offt);
 		//printf("%s:%d@%d\n", k, vlen, offt);
 		htput(k, vlen, offt);
+		c++;
 	}
+	printf("\t%d words\n", c);
 
 	int fd = open(argv[2], O_RDONLY);
 
@@ -181,27 +212,49 @@ int main(int argc, char *argv[])
 	void *ad;
 	ad = mmap(NULL, sz, PROT_READ, MAP_PRIVATE, fd, 0);
 
-	while (printf("\n>>>") && fgets(k, sizeof(k), stdin)) {
-		
-		len = strlen(k) - 1;
-		if (len <= 1)
-			continue;
-		k[len] = 0;
-		h = hash(k);
-		if (HT[h].len) {
-			NODE *n = lookup(k, HT[h].n);
-			if (n) {
+	#define HISTORY_FILE	".lookups"
+	linenoiseHistoryLoad(HISTORY_FILE); /* Load the history at startup */
 
-				char *p = ad + n->idx->offt;
+	char *str;
+	while((str = linenoise(">>> ")) != NULL) {
+		if (str[0] != '\0') {
 
-				while (--n->idx->vlen)
-					printf("%c", *p++);
+			len = strlen(str);
 
+			if (len < 1)
+				continue;
+
+			printf("%s\n", str);
+
+			h = hash(str);
+
+			if (HT[h].len) {
+				NODE *n = lookup(str, HT[h].n);
+				if (n) {
+					
+					int offt, vlen;
+
+					offt = n->idx->offt;
+					vlen = n->idx->vlen;
+
+					char *p = ad + offt;
+
+					while (--vlen)
+						printf("%c", *p++);
+
+				} else
+					puts("Not found");
 			} else
 				puts("Not found");
+
+			linenoiseHistoryAdd(str);
+			linenoiseHistorySave(HISTORY_FILE); /* Save every new entry */
+			printf("\n");
 		}
-		//printf(">");
+		if (str)
+			free(str);
 	}
+	printf("\n");
 
 	close(fd);
 
@@ -213,4 +266,5 @@ int main(int argc, char *argv[])
 	}
 
 	return 0;
+
 }
