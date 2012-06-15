@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 	unsigned int i, j, vlen, klen, len, pf;
 
 	FILE *fp = fopen(argv[1], "r");
-
+	// SQL-like K/V parser
 	while (fgets(line, sizeof(line), fp)) {
 		if (strstr(line, "INSERT")) {
 			len = strlen(line) - 1;
@@ -42,9 +42,10 @@ int main(int argc, char *argv[])
 			printf("Expected INSERT, got %s\n", line);
 			exit(-1);
 		}
-
+		// take it while it hot...
 		pf = ftell(fp) - vlen;
-		printf("%s:%d@%d\n", k, vlen + 1, pf - 4);
+		printf("%s%c%d%c%d\n", k, 0xffffff88, vlen + 1,
+					  0xffffffaf, pf - 4);
 	}
 	fclose(fp);
 
