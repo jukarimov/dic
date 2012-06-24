@@ -158,11 +158,11 @@ void parse(const char *line, char *key, int *len, int *oft)
 {
 	while (*line != '\n') {
 		*key++ = *line++;
-		if (*line == 0xffffff88) {
+		if (*line == '\x88') {
 			*key = 0;
 			line++;
 			*len = atoi(line);
-			while (*line++ != 0xffffffaf)
+			while (*line++ != '\xaf')
 				;
 			*oft = atoi(line);
 			return;
@@ -222,8 +222,6 @@ int main(int argc, char *argv[])
 
 			if (len < 1)
 				continue;
-
-			printf("%s\n", str);
 
 			h = hash(str);
 
