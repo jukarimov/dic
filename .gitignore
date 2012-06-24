@@ -1,1 +1,5 @@
 .lookup
+*.dic
+*.sql
+*.txt
+*.idx

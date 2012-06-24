@@ -9,4 +9,4 @@ dic:
 	cc parse.c linenoise.c -Wall -O2 -g -o $@
 
 clean:
-	rm -f *.idx *.o a.out *.dic *.sql index dic
+	rm -f *.idx *.o a.out *.dic *.sql index dic .lookups

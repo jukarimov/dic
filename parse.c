@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
 	int i, h, vlen, offt, len;
 
 	if (argc < 3) {
-		puts("Usage: run [idx] [dic]");
+		puts("Usage: run [foo.idx] [foo.sql]");
 		exit(-1);
 	}
 
@@ -191,7 +191,6 @@ int main(int argc, char *argv[])
 	}
 
 	int c = 0;
-	printf("Loading index...");
 	while ((len=fgetln(line)) != -1) {
 
 		parse(line, k, &vlen, &offt);
@@ -199,7 +198,7 @@ int main(int argc, char *argv[])
 		htput(k, vlen, offt);
 		c++;
 	}
-	printf("\t%d words\n", c);
+	printf("Loaded \t%d words\n", c);
 
 	int fd = open(argv[2], O_RDONLY);
 
