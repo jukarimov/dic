@@ -50,7 +50,8 @@ typedef struct node NODE;
 
 #define BUCKETS 	60000
 
-#define	DCHARHASH(h, c)	((h) = 0x63c63cd9*(h) + 0x9c39c33d + (c))
+//#define	DCHARHASH(h, c)	((h) = 0x63c63cd9*(h) + 0x9c39c33d + (c))
+#define	DCHARHASH(h, c)	(h = h + c)
 
 struct bucket {
 	NODE *n;
@@ -130,11 +131,32 @@ void freetree(NODE *n)
 	}
 }
 
+char *printree(NODE *n)
+{
+
+	if (n != NULL) {
+		printree(n->ln);
+		//printf("%s\n", n->idx->k);
+		return n->idx->k;
+		printree(n->rn);
+	}
+	else
+		return NULL;
+}
+
+struct cache {
+	char *key;
+};
+struct cache CC[100000];
+int cc_len = 0;
+
 void htput(char *k, int vlen, int offt)
 {
 	unsigned int h = hash(k);
 	HT[h].n = treeadd(HT[h].n, k, vlen, offt);
 	++HT[h].len;
+	CC[cc_len].key = strdup(k);
+	++cc_len;
 }
 
 FILE *CFP;
@@ -169,7 +191,27 @@ void parse(const char *line, char *key, int *len, int *oft)
 		}
 	}
 }
- 
+
+int complet(const char *k, const char *str)
+{
+	while (*k) {
+		if (*k != *str)
+			return (*k > *str ? 1 : -1);
+		k++, str++;
+	}
+	return 0;
+}
+
+void completion(const char *buf, linenoiseCompletions *lc)
+{
+	int i;
+	for (i=0; i < cc_len; i++)
+	{
+		if (complet(buf, CC[i].key) == 0)
+			linenoiseAddCompletion(lc, CC[i].key);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	printf("%s", banner);
@@ -214,8 +256,14 @@ int main(int argc, char *argv[])
 	#define HISTORY_FILE	".lookups"
 	linenoiseHistoryLoad(HISTORY_FILE); /* Load the history at startup */
 
+	linenoiseSetCompletionCallback(completion);
+
 	char *str;
 	while((str = linenoise(">>> ")) != NULL) {
+
+		if (strcmp(str, "/exit") == 0)
+			break;
+
 		if (str[0] != '\0') {
 
 			len = strlen(str);
@@ -239,10 +287,19 @@ int main(int argc, char *argv[])
 					while (--vlen)
 						printf("%c", *p++);
 
-				} else
-					puts("Not found");
+				} else {
+					puts("Not found in tree");
+					int j;
+					for (j=0,i=0; i < cc_len; i++)
+					{
+						if (complet(str, CC[i].key) == 0) {
+							printf("%d) %s\n", ++j,
+								CC[i].key);
+						}
+					} //TODO also do levenshtein search if no found
+				}
 			} else
-				puts("Not found");
+				puts("Not found in table");
 
 			linenoiseHistoryAdd(str);
 			linenoiseHistorySave(HISTORY_FILE); /* Save every new entry */
@@ -252,6 +309,8 @@ int main(int argc, char *argv[])
 			free(str);
 	}
 	printf("\n");
+	if (str)
+		free(str);
 
 	close(fd);
 
@@ -262,6 +321,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	return 0;
+	for (i=0; i < cc_len; i++) {
+		free(CC[i].key);
+	}
 
+	return 0;
 }
