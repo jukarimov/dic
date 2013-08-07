@@ -1,2 +1,4 @@
 spell checking horse like aspell
 Word completion
+net/netdic.c cleanup (heavy)
+client for netdic, for poor people not having a netcat...
